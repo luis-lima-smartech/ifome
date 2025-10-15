@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI FOME - Cardápio</title>
+    <!-- Link para o Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Cor do tema para a barra do browser -->
+    <meta name="theme-color" content="#c5a560">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
@@ -872,6 +877,19 @@
             checkUser();
             checkLastOrder();
         });
+    </script>
+
+    <!-- CÓDIGO PARA INSTALAR A APLICAÇÃO (PWA) -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').then(registration => {
+                    console.log('Service Worker registado com sucesso:', registration);
+                }).catch(error => {
+                    console.log('Falha ao registar o Service Worker:', error);
+                });
+            });
+        }
     </script>
 </body>
 </html>
