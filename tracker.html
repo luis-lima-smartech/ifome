@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acompanhe seu Pedido - AI FOME</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#c5a560">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-color: #f0f0f0;
+            --primary-color: #c5a560;
+            --card-background: rgba(28, 28, 28, 0.9);
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #111;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+        .logo-img {
+            max-width: 150px;
+            margin-bottom: 30px;
+        }
+        .tracker-container {
+            background-color: var(--card-background);
+            padding: 40px;
+            border-radius: 10px;
+            border-top: 5px solid var(--primary-color);
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        #order-id {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 30px;
+            word-break: break-all;
+        }
+        #status-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            text-align: left;
+        }
+        .status-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #444;
+            opacity: 0.3;
+            transition: opacity 0.5s ease;
+        }
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        .status-item.active {
+            opacity: 1;
+            font-weight: bold;
+        }
+        .status-item.active::before {
+            content: '✓ ';
+            color: var(--primary-color);
+        }
+        #back-to-menu {
+            margin-top: 30px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+
+    <img src="logo.png" alt="Logotipo Ai Fome Burger" class="logo-img">
+    <div class="tracker-container">
+        <h1>Acompanhe seu Pedido</h1>
+        <p id="order-id">Carregando...</p>
+        
+        <ul id="status-list">
+            <li class="status-item" data-status="Pedido Recebido">Pedido Recebido</li>
+            <li class="status-item" data-status="Em Preparo">Em Preparo</li>
+            <li class="status-item" data-status="Saiu para Entrega">Saiu para Entrega</li>
+            <li class="status-item" data-status="Entregue">Entregue</li>
+        </ul>
+
+        <a href="index.html" id="back-to-menu">← Voltar para o Cardápio</a>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script>
+        // COLE A MESMA CONFIGURAÇÃO DO FIREBASE DO SEU index.html AQUI
+        const firebaseConfig = {
+          apiKey: "AIzaSyD5RdgOAzSRxhjwPDBT...", 
+          authDomain: "aifome-cardapio.firebaseapp.com",
+          projectId: "aifome-cardapio",
+          storageBucket: "aifome-cardapio.appspot.com",
+          messagingSenderId: "247386725614",
+          appId: "1:247386725614:web:793ad0a4c48249eb08e7ff"
+        };
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch(e) { console.error("Firebase já inicializado."); }
+        const db = firebase.firestore();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const orderIdElement = document.getElementById('order-id');
+            const statusListItems = document.querySelectorAll('.status-item');
+
+            const params = new URLSearchParams(window.location.search);
+            const orderId = params.get('orderId');
+
+            if (orderId) {
+                orderIdElement.textContent = `Pedido #${orderId.substring(0, 7)}...`;
+
+                const orderRef = db.collection('orders').doc(orderId);
+
+                orderRef.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const orderData = doc.data();
+                        const currentStatus = orderData.status;
+                        
+                        let statusFound = false;
+                        statusListItems.forEach(item => {
+                            if (statusFound) {
+                                item.classList.remove('active');
+                            } else {
+                                item.classList.add('active');
+                            }
+
+                            if (item.dataset.status === currentStatus) {
+                                statusFound = true;
+                            }
+                        });
+
+                    } else {
+                        orderIdElement.textContent = "Pedido não encontrado.";
+                    }
+                });
+            } else {
+                orderIdElement.textContent = "Nenhum pedido especificado.";
+            }
+        });
+    </script>
+</body>
+</html>
+

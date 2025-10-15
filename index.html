@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI FOME - Cardápio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-color: #f0f0f0;
+            --primary-color: #c5a560;
+            --card-background: rgba(28, 28, 28, 0.9); 
+            --whatsapp-green: #25D366;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            
+            background-image: url('background.png');
+            background-color: #111; 
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--text-color);
+            line-height: 1.6;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 1; 
+        }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--card-background);
+            padding: 30px;
+            border-radius: 10px;
+            border-top: 5px solid var(--primary-color);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 2em;
+            color: #aaa;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-content h2 { color: var(--primary-color); margin-bottom: 20px; }
+        .modal-content p { margin-bottom: 20px; font-size: 0.9em; color: #ccc; }
+        .modal-content .form-group { margin-bottom: 15px; text-align: left; }
+        .modal-content label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .modal-content input {
+            width: 100%; padding: 10px; border-radius: 5px;
+            border: 1px solid #555; background-color: #333; color: var(--text-color);
+        }
+        .modal-button {
+            background-color: var(--primary-color); color: #111; border: none;
+            padding: 12px 30px; border-radius: 5px; cursor: pointer;
+            font-weight: bold; font-size: 1.1em; width: 100%; margin-top: 10px;
+        }
+
+        /* --- Layout Principal --- */
+        header, main, footer { position: relative; z-index: 2; }
+
+        header {
+            text-align: center; padding: 10px 0; flex-shrink: 0;
+            position: relative;
+        }
+        
+        #user-welcome {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 0.9em;
+            text-align: right;
+        }
+
+        #user-welcome a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .logo-img { width: 80%; max-width: 200px; height: auto; }
+        
+        main.content-area { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .menu-container { max-width: 800px; margin: 0 auto; }
+        .menu-section { margin-bottom: 40px; }
+        .menu-section h2 {
+            font-size: 2em; color: var(--primary-color); border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .menu-section h3 {
+            font-size: 1.5em; color: #f0f0f0; margin-top: 30px; margin-bottom: 15px;
+            border-left: 4px solid var(--primary-color); padding-left: 10px;
+        }
+
+        .menu-item {
+            display: flex; flex-direction: column; background-color: var(--card-background);
+            border-left: 5px solid var(--primary-color); padding: 15px; margin-bottom: 15px;
+            border-radius: 5px; transition: box-shadow 0.2s ease; backdrop-filter: blur(5px);
+            position: relative; 
+        }
+        .item-main-info { display: flex; align-items: center; width: 100%; }
+        
+        .item-image {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            object-fit: cover;
+            margin-right: 15px;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 5;
+        }
+        
+        .menu-item.is-zoomed {
+            z-index: 15;
+        }
+        
+        .menu-item.is-zoomed .item-image {
+            transform: scale(2.5);
+            transform-origin: left top;
+            z-index: 10;
+        }
+
+        .item-details { flex-grow: 1; text-align: left; }
+        .item-details h4 { font-size: 1.2em; color: #fff; margin-bottom: 5px; }
+        .item-details p { font-size: 0.9em; color: #ccc; }
+        .item-controls { display: flex; align-items: center; margin-left: 15px; }
+        .quantity-btn {
+            background-color: var(--primary-color); color: #111; border: none;
+            width: 30px; height: 30px; border-radius: 50%;
+            font-size: 1.4em; font-weight: bold; cursor: pointer; line-height: 30px;
+        }
+        .quantity { font-size: 1.3em; font-weight: 700; margin: 0 15px; min-width: 25px; text-align: center; }
+        .item-price { font-size: 1.3em; font-weight: 700; color: var(--primary-color); margin-left: 20px; min-width: 75px; text-align: right; }
+        .item-actions { width: 100%; margin-top: 15px; display: flex; gap: 10px; }
+        .action-btn {
+            flex-grow: 1; background-color: #333; border: 1px solid var(--primary-color);
+            color: var(--primary-color); padding: 8px; border-radius: 5px; cursor: pointer;
+        }
+        .obs-input {
+            width: 100%; background-color: rgba(0,0,0,0.3); border: 1px solid #444;
+            border-radius: 5px; padding: 8px; color: var(--text-color);
+            font-family: 'Poppins', sans-serif; font-size: 0.9em;
+        }
+        
+        #cart-fab {
+            position: fixed; bottom: 30px; right: 30px; z-index: 1000;
+            background-color: var(--primary-color); color: #111;
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2em; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #cart-count {
+            position: absolute; top: -5px; right: -5px; background-color: var(--whatsapp-green);
+            color: white; font-size: 0.5em; width: 22px; height: 22px;
+            border-radius: 50%; line-height: 22px; text-align: center;
+        }
+        
+        #cart-items-list, #addons-list { overflow-y: auto; text-align: left; padding-right: 10px; }
+
+        .cart-item { margin-bottom: 10px; }
+        .cart-item-name { font-weight: bold; }
+        .cart-item-details { font-size: 0.8em; color: #ccc; padding-left: 15px; }
+        #cart-total { margin-top: 20px; font-size: 1.3em; font-weight: bold; }
+        
+        #addons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .addon-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            width: 100%;
+        }
+
+        .addon-item label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+
+        .addon-item input[type="checkbox"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #333;
+            border: 2px solid var(--primary-color);
+            margin: 0;
+            color: currentColor;
+            width: 1.4em;
+            height: 1.4em;
+            border-radius: 4px;
+            display: grid;
+            place-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .addon-item input[type="checkbox"]::before {
+            content: "";
+            width: 0.7em;
+            height: 0.7em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em var(--primary-color);
+            transform-origin: bottom left;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .addon-item input[type="checkbox"]:checked::before {
+            transform: scale(1);
+        }
+        
+        .addon-item span {
+            font-size: 1em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* --- ESTILOS DA NOVA SEÇÃO DE PROMOÇÕES --- */
+        #promo-modal .modal-content {
+            max-width: 700px;
+            overflow-y: hidden;
+        }
+        .promo-list-wrapper {
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding: 5px;
+            margin-right: -15px;
+            padding-right: 15px;
+            flex-grow: 1;
+        }
+        #promo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow: visible;
+            padding-bottom: 200px;
+        }
+        .promo-item {
+            flex-direction: row;
+            padding: 15px;
+            align-items: center;
+        }
+        
+        .promo-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        .promo-purchase-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-left: 20px;
+        }
+        .promo-price {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--primary-color);
+            line-height: 1;
+        }
+
+        .promo-validity {
+            font-size: 1em;
+            color: #ddd;
+            margin-top: -15px;
+            margin-bottom: 25px;
+            font-style: italic;
+            flex-shrink: 0;
+        }
+
+        .skip-promo-btn {
+            width: auto;
+            padding-left: 30px;
+            padding-right: 30px;
+            flex-shrink: 0;
+        }
+
+        footer { 
+            width: 100%; 
+            text-align: center; 
+            flex-shrink: 0;
+            padding: 20px 0;
+        }
+         #track-order-btn {
+            display: none;
+            background-color: var(--primary-color);
+            color: #111;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        /* --- AJUSTES DE RESPONSIVIDADE --- */
+        @media (max-width: 600px) {
+            #user-welcome { display: none; }
+            .logo-img { max-width: 160px; }
+            main.content-area { padding: 10px; }
+            .menu-section h2 { font-size: 1.7em; }
+            .menu-section h3 { font-size: 1.2em; }
+            .menu-item { padding: 12px; }
+            .item-image { width: 60px; height: 60px; }
+            
+            .menu-item.is-zoomed .item-image { transform: scale(3.0); }
+            
+            .item-details h4 { font-size: 1.05em; }
+            .item-details p { font-size: 0.85em; }
+            .item-price { font-size: 1.1em; margin-left: 10px; }
+            .quantity { margin: 0 10px; }
+            .modal-content { padding: 20px; width: 95%; }
+            #cart-fab { bottom: 20px; right: 20px; width: 55px; height: 55px; }
+
+            .promo-item {
+                flex-direction: column;
+                text-align: center;
+            }
+            .promo-image {
+                margin-right: 0;
+                margin-bottom: 15px;
+                width: 120px;
+                height: 120px;
+            }
+            .promo-item .item-details {
+                text-align: center;
+            }
+            .promo-purchase-area {
+                margin-left: 0;
+                margin-top: 15px;
+                width: 100%;
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="user-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Bem-vindo ao Ai Fome!</h2>
+            <p>Para agilizar seu pedido, por favor, informe seus dados.</p>
+            <div class="form-group"><label for="user-name">Seu Nome:</label><input type="text" id="user-name" required></div>
+            <div class="form-group"><label for="user-phone">Seu Telefone (WhatsApp):</label><input type="tel" id="user-phone" required></div>
+            <div class="form-group"><label for="user-address">Endereço de Entrega:</label><input type="text" id="user-address" placeholder="Rua, Número, Bairro, Referência" required></div>
+            <button id="register-btn" class="modal-button">Acessar Cardápio</button>
+        </div>
+    </div>
+
+    <div id="notification-modal" class="modal-overlay">
+        <div class="modal-content">
+            <p id="notification-message"></p>
+            <button id="notification-ok-btn" class="modal-button" style="width: auto; padding: 10px 40px; margin: 20px auto 0 auto;">OK</button>
+        </div>
+    </div>
+
+    <header>
+        <div id="user-welcome"></div>
+        <div class="img"><img src="logo.png" alt="Logotipo Ai Fome Burger" class="logo-img"></div>
+    </header>
+
+    <main class="content-area">
+        <div class="menu-container">
+            <section class="menu-section">
+                <h2>Cardápio Completo</h2>
+                <h3>Clássicos</h3>
+                <div class="menu-item" data-id="hamb-01" data-name="Ai Fome 01 (Churrasco)" data-price="17.00"><div class="item-main-info"><img src="images/aifome 01.jpeg" alt="Ai Fome 01 (Churrasco)" class="item-image"><div class="item-details"><h4>Ai Fome 01 (Churrasco)</h4><p>Pão brioche, burger 160g, queijo mussarela, barbecue.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 17,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-03" data-name="Ai Fome 03 (X-Tudo)" data-price="22.00"><div class="item-main-info"><img src="images/aifome 03.jpeg" alt="Ai Fome 03 (X-Tudo)" class="item-image"><div class="item-details"><h4>Ai Fome 03 (X-Tudo)</h4><p>Pão brioche, burger 160g, bacon, ovo, queijo mussarela, creme de alho.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 22,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-04" data-name="Ai Fome 04 (Bacon)" data-price="23.00"><div class="item-main-info"><img src="images/aifome 04.jpeg" alt="Ai Fome 04 (Bacon)" class="item-image"><div class="item-details"><h4>Ai Fome 04 (Bacon)</h4><p>Pão brioche, burger 160g, bacon, queijo mussarela e molho de queijo.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 23,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-06" data-name="Ai Fome 06 (Cheddar)" data-price="23.00"><div class="item-main-info"><img src="images/aifome 06.jpeg" alt="Ai Fome 06 (Cheddar)" class="item-image"><div class="item-details"><h4>Ai Fome 06 (Cheddar)</h4><p>Pão brioche, burger 160g, bacon, queijo cheddar, barbecue.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 23,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+
+                <h3>Especiais da Terra</h3>
+                <div class="menu-item" data-id="hamb-02" data-name="Ai Fome 02 (Calabresa)" data-price="22.00"><div class="item-main-info"><img src="images/aifome 02.jpeg" alt="Ai Fome 02 (Calabresa)" class="item-image"><div class="item-details"><h4>Ai Fome 02 (Calabresa)</h4><p>Pão brioche, burger 160g, queijo mussarela, requeijão, calabresa defumada.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 22,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-08" data-name="Ai Fome 08 (Coalho)" data-price="26.00"><div class="item-main-info"><img src="images/aifome 08.jpeg" alt="Ai Fome 08 (Coalho)" class="item-image"><div class="item-details"><h4>Ai Fome 08 (Coalho)</h4><p>Pão brioche, burger 160g, queijo coalho, calabresa, geleia de pimenta, creme de alho.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 26,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-09" data-name="Ai Fome 09 (Carne de Sol)" data-price="26.00"><div class="item-main-info"><img src="images/aifome 09.jpeg" alt="Ai Fome 09 (Carne de Sol)" class="item-image"><div class="item-details"><h4>Ai Fome 09 (Carne de Sol)</h4><p>Pão brioche, burger 160g, queijo coalho, carne de sol, cebola caramelizada.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 26,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-13" data-name="Ai Fome 13 (Sol em Dobro)" data-price="24.00"><div class="item-main-info"><img src="images/aifome 13.jpeg" alt="Ai Fome 13 (Sol em Dobro)" class="item-image"><div class="item-details"><h4>Ai Fome 13 (Sol em Dobro)</h4><p>Pão brioche, burger 160g, carne de sol em dobro, creme cheese, queijo mussarela.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 24,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+
+                <h3>Frango & Cia</h3>
+                <div class="menu-item" data-id="hamb-10" data-name="Ai Fome 10 (Frango)" data-price="28.00"><div class="item-main-info"><img src="images/aifome 10.jpeg" alt="Ai Fome 10 (Frango)" class="item-image"><div class="item-details"><h4>Ai Fome 10 (Frango)</h4><p>Pão brioche, burger 160g, frango desfiado, bacon, requeijão, queijo cheddar.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 28,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-05" data-name="Ai Fome 05 (Geleia)" data-price="22.00"><div class="item-main-info"><img src="images/aifome 05.jpeg" alt="Ai Fome 05 (Geleia)" class="item-image"><div class="item-details"><h4>Ai Fome 05 (Geleia)</h4><p>Pão brioche, burger 160g, bacon, geleia de pimenta, queijo mussarela, creme de alho.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 22,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-11" data-name="Ai Fome 11 (Onion)" data-price="25.00"><div class="item-main-info"><img src="images/aifome 11.jpeg" alt="Ai Fome 11 (Onion)" class="item-image"><div class="item-details"><h4>Ai Fome 11 (Onion)</h4><p>Pão brioche, burger 160g, anéis de cebola, bacon, queijo mussarela, creme de alho.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 25,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-12" data-name="Ai Fome 12 (Creme Cheese)" data-price="25.00"><div class="item-main-info"><img src="images/aifome 12.jpeg" alt="Ai Fome 12 (Creme Cheese)" class="item-image"><div class="item-details"><h4>Ai Fome 12 (Creme Cheese)</h4><p>Pão brioche, burger 160g, creme cheese, bacon, geleia de pimenta, queijo mussarela.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 25,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+                <div class="menu-item" data-id="hamb-14" data-name="Ai Fome 14 (Turbinado)" data-price="30.00"><div class="item-main-info"><img src="images/aifome 14.jpeg" alt="Ai Fome 14 (Turbinado)" class="item-image"><div class="item-details"><h4>Ai Fome 14 (Turbinado)</h4><p>Pão brioche, burger 160g, frango desfiado, bacon, calabresa, queijo cheddar, creme cheese.</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 30,00</span></div><div class="item-actions"><button class="action-btn btn-addons">Adicionais</button><input type="text" class="obs-input" placeholder="Observações?"></div></div>
+            </section>
+    
+            <section class="menu-section">
+                <h2>Bebidas</h2>
+                <div class="menu-item" data-id="beb-01" data-name="Refrigerante Lata 350ml" data-price="6.00"><div class="item-main-info"><img src="images/beb-01.png" alt="Refrigerante Lata 350ml" class="item-image"><div class="item-details"><h4>Refrigerante Lata 350ml</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 6,00</span></div><div class="item-actions"><input type="text" class="obs-input" placeholder="Qual sabor?"></div></div>
+                <div class="menu-item" data-id="beb-02" data-name="Refrigerante 1L" data-price="10.00"><div class="item-main-info"><img src="images/beb-02.png" alt="Refrigerante 1L" class="item-image"><div class="item-details"><h4>Refrigerante 1L</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 10,00</span></div><div class="item-actions"><input type="text" class="obs-input" placeholder="Qual sabor?"></div></div>
+                <div class="menu-item" data-id="beb-03" data-name="Suco de Polpa 400ml" data-price="7.00"><div class="item-main-info"><img src="images/beb-03.png" alt="Suco de Polpa 400ml" class="item-image"><div class="item-details"><h4>Suco de Polpa 400ml</h4><p>(Maracujá, Goiaba e Acerola)</p></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 7,00</span></div><div class="item-actions"><input type="text" class="obs-input" placeholder="Qual sabor?"></div></div>
+                <div class="menu-item" data-id="beb-04" data-name="Heineken Lata 350ml" data-price="8.00"><div class="item-main-info"><img src="images/beb-04.png" alt="Heineken Lata 350ml" class="item-image"><div class="item-details"><h4>Heineken Lata 350ml</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 8,00</span></div></div>
+                <div class="menu-item" data-id="beb-05" data-name="Heineken Long Neck 330ml" data-price="10.00"><div class="item-main-info"><img src="images/beb-05.png" alt="Heineken Long Neck 330ml" class="item-image"><div class="item-details"><h4>Heineken Long Neck 330ml</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 10,00</span></div></div>
+            </section>
+            
+            <section class="menu-section">
+                <h2>Porções</h2>
+                <div class="menu-item" data-id="por-01" data-name="Porção: Batata P" data-price="8.00"><div class="item-main-info"><img src="images/por-01.jpeg" alt="Porção: Batata P" class="item-image"><div class="item-details"><h4>Batata P</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 8,00</span></div></div>
+                <div class="menu-item" data-id="por-02" data-name="Porção: Batata M" data-price="11.00"><div class="item-main-info"><img src="images/por-02.jpeg" alt="Porção: Batata M" class="item-image"><div class="item-details"><h4>Batata M</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 11,00</span></div></div>
+                <div class="menu-item" data-id="por-03" data-name="Porção: Anéis de Cebola (10 un)" data-price="13.00"><div class="item-main-info"><img src="images/ane.ceb.png" alt="Porção: Anéis de Cebola (10 un)" class="item-image"><div class="item-details"><h4>Anéis de Cebola (10 un)</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 13,00</span></div></div>
+                <div class="menu-item" data-id="por-04" data-name="Porção: Carne de Sol c/ Fritas" data-price="30.00"><div class="item-main-info"><img src="images/car.fri.jpeg" alt="Porção: Carne de Sol c/ Fritas" class="item-image"><div class="item-details"><h4>Carne de Sol c/ Fritas</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 30,00</span></div></div>
+                <div class="menu-item" data-id="por-05" data-name="Porção: Calabresa c/ Fritas" data-price="25.00"><div class="item-main-info"><img src="images/cal.fri.png" alt="Porção: Calabresa c/ Fritas" class="item-image"><div class="item-details"><h4>Calabresa c/ Fritas</h4></div><div class="item-controls"><button class="quantity-btn minus">-</button><span class="quantity">0</span><button class="quantity-btn plus">+</button></div><span class="item-price">R$ 25,00</span></div></div>
+            </section>
+        </div>
+    </main>
+    
+    <div id="cart-fab">🛍️<span id="cart-count">0</span></div>
+
+    <div id="cart-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close-btn">&times;</span>
+            <h2>Sua Sacola</h2>
+            <div id="cart-items-list"></div>
+            <div id="cart-total">Total: R$ 0,00</div>
+            <button id="confirm-order-btn" class="modal-button">Finalizar Pedido no WhatsApp</button>
+        </div>
+    </div>
+    
+    <div id="addons-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close-btn">&times;</span>
+            <h2 id="addons-title">Adicionais do Lanche</h2>
+            <div id="addons-list"></div>
+            <button id="save-addons-btn" class="modal-button">Confirmar Adicionais</button>
+        </div>
+    </div>
+    
+    <div id="promo-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close-btn">&times;</span>
+            <h2>🔥 Especial do Dia 🔥</h2>
+            <p class="promo-validity">Válido de Quarta a Sexta!</p>
+            <div class="promo-list-wrapper">
+                <div id="promo-list">
+                     <div class="menu-item promo-item" data-id="promo-01" data-name="02 AiFome 04" data-price="39.99">
+                          <img src="images/promo04.png" alt="02 AiFome 04" class="promo-image item-image">
+                          <div class="item-details">
+                              <h4>02 AiFome 04</h4>
+                              <p>Pão brioche, burger 160g na brasa, bacon, queijo mussarela e molho de queijo.</p>
+                          </div>
+                          <div class="promo-purchase-area">
+                              <span class="promo-price">R$ 39,99</span>
+                              <div class="item-controls">
+                                  <button class="quantity-btn minus">-</button>
+                                  <span class="quantity">0</span>
+                                  <button class="quantity-btn plus">+</button>
+                              </div>
+                          </div>
+                     </div>
+                     <div class="menu-item promo-item" data-id="promo-02" data-name="02 AiFome 06" data-price="41.99">
+                          <img src="images/promo06.png" alt="02 AiFome 06" class="promo-image item-image">
+                          <div class="item-details">
+                              <h4>02 AiFome 06</h4>
+                              <p>Pão brioche, burger 160g na brasa, bacon, queijo cheddar e barbecue.</p>
+                          </div>
+                          <div class="promo-purchase-area">
+                              <span class="promo-price">R$ 41,99</span>
+                              <div class="item-controls">
+                                  <button class="quantity-btn minus">-</button>
+                                  <span class="quantity">0</span>
+                                  <button class="quantity-btn plus">+</button>
+                              </div>
+                          </div>
+                     </div>
+                     <div class="menu-item promo-item" data-id="promo-03" data-name="02 AiFome 07" data-price="43.99">
+                          <img src="images/promo07.png" alt="02 AiFome 07" class="promo-image item-image">
+                          <div class="item-details">
+                              <h4>02 AiFome 07</h4>
+                              <p>Pão brioche, burger 160g na brasa, carne de sol, bacon, cebola caramelizada, queijo mussarela e creme de alho.</p>
+                          </div>
+                          <div class="promo-purchase-area">
+                              <span class="promo-price">R$ 43,99</span>
+                              <div class="item-controls">
+                                  <button class="quantity-btn minus">-</button>
+                                  <span class="quantity">0</span>
+                                  <button class="quantity-btn plus">+</button>
+                              </div>
+                          </div>
+                     </div>
+                     <div class="menu-item promo-item" data-id="promo-04" data-name="02 AiFome 10" data-price="44.99">
+                          <img src="images/promo08.png" alt="02 AiFome 10" class="promo-image item-image">
+                          <div class="item-details">
+                              <h4>02 AiFome 10</h4>
+                              <p>Pão brioche, burger 160g na brasa, frango desfiado, bacon, requeijão e queijo cheddar.</p>
+                          </div>
+                          <div class="promo-purchase-area">
+                              <span class="promo-price">R$ 44,99</span>
+                              <div class="item-controls">
+                                  <button class="quantity-btn minus">-</button>
+                                  <span class="quantity">0</span>
+                                  <button class="quantity-btn plus">+</button>
+                              </div>
+                          </div>
+                     </div>
+                </div>
+            </div>
+            <button class="modal-button skip-promo-btn" id="skip-promo-btn">Ver cardápio completo</button>
+        </div>
+    </div>
+
+    <footer>
+        <a id="track-order-btn" href="#" target="_blank">Acompanhar Último Pedido</a>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyD5RdgOAzSRxhjwPDBT...", // Substitua com sua chave real
+          authDomain: "aifome-cardapio.firebaseapp.com",
+          projectId: "aifome-cardapio",
+          storageBucket: "aifome-cardapio.appspot.com",
+          messagingSenderId: "247386725614",
+          appId: "1:247386725614:web:793ad0a4c48249eb08e7ff"
+        };
+
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch(e) { console.error("Firebase já inicializado ou configuração inválida."); }
+        const db = firebase.firestore();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            let userData = {};
+            let cart = [];
+            let currentItemForAddons = null;
+            const availableAddons = [
+                { name: 'Anéis de Cebola', price: 3.00 }, { name: 'Creme Cheese', price: 4.00 },
+                { name: 'Ovo', price: 3.00 }, { name: 'Cebola Caramelizada', price: 3.00 },
+                { name: 'Burger na Brasa (160g)', price: 8.00 }, { name: 'Queijo Cheddar', price: 4.00 },
+                { name: 'Queijo Mussarela', price: 3.00 }, { name: 'Requeijão', price: 3.00 },
+                { name: 'Geleia de Pimenta', price: 3.00 }, { name: 'Queijo Coalho', price: 5.00 },
+                { name: 'Frango Desfiado', price: 4.00 },
+            ];
+
+            const userModal = document.getElementById('user-modal');
+            const promoModal = document.getElementById('promo-modal');
+            const registerBtn = document.getElementById('register-btn');
+            const cartFab = document.getElementById('cart-fab');
+            const cartModal = document.getElementById('cart-modal');
+            const addonsModal = document.getElementById('addons-modal');
+            const userWelcomeDiv = document.getElementById('user-welcome');
+            const confirmOrderBtn = document.getElementById('confirm-order-btn');
+            const trackOrderBtn = document.getElementById('track-order-btn');
+            const skipPromoBtn = document.getElementById('skip-promo-btn');
+            
+            const notificationModal = document.getElementById('notification-modal');
+            const notificationMessage = document.getElementById('notification-message');
+            const notificationOkBtn = document.getElementById('notification-ok-btn');
+
+            function showNotification(message) {
+                notificationMessage.textContent = message;
+                notificationModal.style.display = 'flex';
+            }
+
+            notificationOkBtn.addEventListener('click', () => {
+                notificationModal.style.display = 'none';
+            });
+            notificationModal.addEventListener('click', (e) => {
+                if (e.target === notificationModal) {
+                    notificationModal.style.display = 'none';
+                }
+            });
+
+            function updateUserWelcome() {
+                if (userData && userData.name) {
+                    userWelcomeDiv.innerHTML = `<span>Seja bem-vindo, <strong>${userData.name.split(' ')[0]}</strong>!</span> <a id="header-change-user">Não é você? Alterar.</a>`;
+                    document.getElementById('header-change-user').addEventListener('click', () => {
+                        localStorage.removeItem('aiFomeUser');
+                        userData = {};
+                        checkUser();
+                    });
+                } else {
+                    userWelcomeDiv.innerHTML = '';
+                }
+            }
+
+            function checkUser() {
+                const savedUser = localStorage.getItem('aiFomeUser');
+                if (savedUser) {
+                    userData = JSON.parse(savedUser);
+                    userModal.style.display = 'none';
+                    if (cart.length === 0) {
+                        promoModal.style.display = 'flex';
+                    }
+                } else {
+                    userModal.style.display = 'flex';
+                }
+                updateUserWelcome();
+            }
+
+            registerBtn.addEventListener('click', function() {
+                const userName = document.getElementById('user-name').value.trim();
+                const userPhone = document.getElementById('user-phone').value.trim();
+                const userAddress = document.getElementById('user-address').value.trim();
+                if (!userName || !userPhone || !userAddress) {
+                    showNotification('Por favor, preencha todos os campos.');
+                    return;
+                }
+                userData = { name: userName, phone: userPhone, address: userAddress };
+                localStorage.setItem('aiFomeUser', JSON.stringify(userData));
+                userModal.style.display = 'none';
+                promoModal.style.display = 'flex';
+                updateUserWelcome();
+            });
+
+            function resetOrderState() {
+                cart = [];
+                document.querySelectorAll('.quantity').forEach(span => {
+                    span.textContent = '0';
+                });
+                 document.querySelectorAll('.obs-input').forEach(input => {
+                    input.value = '';
+                });
+                updateCart();
+                cartModal.style.display = 'none';
+                promoModal.style.display = 'flex';
+            }
+            
+            function updateCart() {
+                let totalItems = 0;
+                let totalPrice = 0;
+                const cartItemsList = document.getElementById('cart-items-list');
+                cartItemsList.innerHTML = '';
+
+                cart.forEach(item => {
+                    let itemTotal = item.price;
+                    totalItems += item.quantity;
+                    const cartItemDiv = document.createElement('div');
+                    cartItemDiv.className = 'cart-item';
+                    let itemText = `<div class="cart-item-name">${item.quantity}x ${item.name}</div>`;
+                    let detailsText = '';
+
+                    if (item.addons && item.addons.length > 0) {
+                        item.addons.forEach(addon => {
+                            itemTotal += addon.price;
+                            detailsText += `&nbsp;&nbsp;+ ${addon.name}<br>`;
+                        });
+                    }
+                    if (item.observations) {
+                        detailsText += `&nbsp;&nbsp;Obs: ${item.observations}<br>`;
+                    }
+                    if(detailsText) itemText += `<div class="cart-item-details">${detailsText}</div>`;
+                    cartItemDiv.innerHTML = itemText;
+                    cartItemsList.appendChild(cartItemDiv);
+                    totalPrice += itemTotal * item.quantity;
+                });
+
+                document.getElementById('cart-count').textContent = totalItems;
+                document.getElementById('cart-total').textContent = `Total: R$ ${totalPrice.toFixed(2).replace('.', ',')}`;
+            }
+
+            function manageItemInCart(itemElement, change) {
+                const id = itemElement.dataset.id;
+                const name = itemElement.dataset.name;
+                const price = parseFloat(itemElement.dataset.price);
+                const obsInput = itemElement.querySelector('.obs-input');
+                let existingItemIndex = cart.findIndex(item => item.id === id);
+
+                if (existingItemIndex > -1) {
+                    cart[existingItemIndex].quantity += change;
+                    if(obsInput) cart[existingItemIndex].observations = obsInput.value.trim();
+                } else if (change > 0) {
+                    cart.push({ id, name, price, quantity: 1, observations: obsInput ? obsInput.value.trim() : '', addons: [] });
+                }
+                
+                cart = cart.filter(item => item.quantity > 0);
+                
+                document.querySelectorAll(`.menu-item[data-id="${id}"] .quantity`).forEach(span => {
+                    const finalQuantity = cart.find(item => item.id === id)?.quantity || 0;
+                    span.textContent = finalQuantity;
+                });
+
+                updateCart();
+            }
+
+            function openAddonsModal(itemElement) {
+                currentItemForAddons = itemElement.dataset.id;
+                const itemInCart = cart.find(item => item.id === currentItemForAddons);
+                
+                if (!itemInCart || itemInCart.quantity === 0) {
+                    showNotification('Adicione o item ao carrinho antes de incluir adicionais!');
+                    return;
+                }
+                
+                document.getElementById('addons-title').textContent = `Adicionais para ${itemElement.dataset.name}`;
+                const addonsList = document.getElementById('addons-list');
+                addonsList.innerHTML = '';
+
+                availableAddons.forEach(addon => {
+                    const isChecked = itemInCart.addons.some(a => a.name === addon.name);
+                    addonsList.innerHTML += `<div class="addon-item"><label><input type="checkbox" data-name="${addon.name}" data-price="${addon.price}" ${isChecked ? 'checked' : ''}> ${addon.name}</label><span>+ R$ ${addon.price.toFixed(2).replace('.', ',')}</span></div>`;
+                });
+                addonsModal.style.display = 'flex';
+            }
+
+            document.getElementById('save-addons-btn').addEventListener('click', () => {
+                const itemInCart = cart.find(item => item.id === currentItemForAddons);
+                if (!itemInCart) return;
+
+                itemInCart.addons = [];
+                const checkboxes = addonsModal.querySelectorAll('input[type="checkbox"]:checked');
+                checkboxes.forEach(cb => {
+                    itemInCart.addons.push({ name: cb.dataset.name, price: parseFloat(cb.dataset.price) });
+                });
+                
+                addonsModal.style.display = 'none';
+                updateCart();
+            });
+
+            document.body.addEventListener('click', function(event) {
+                const target = event.target;
+                const menuItem = target.closest('.menu-item');
+                if (menuItem) {
+                    if (target.classList.contains('plus')) manageItemInCart(menuItem, 1);
+                    if (target.classList.contains('minus')) manageItemInCart(menuItem, -1);
+                    if (target.classList.contains('btn-addons')) openAddonsModal(menuItem);
+                }
+            });
+            
+            document.body.addEventListener('input', function(event){
+                const target = event.target;
+                 if (target.classList.contains('obs-input')) {
+                    const menuItem = target.closest('.menu-item');
+                    const id = menuItem.dataset.id;
+                    let existingItem = cart.find(item => item.id === id);
+                    if(existingItem) {
+                        existingItem.observations = target.value.trim();
+                        updateCart();
+                    }
+                 }
+            });
+
+            cartFab.addEventListener('click', () => cartModal.style.display = 'flex');
+            
+            skipPromoBtn.addEventListener('click', () => {
+                promoModal.style.display = 'none';
+            });
+
+            [userModal, cartModal, addonsModal, promoModal].forEach(modal => {
+                modal.addEventListener('click', (e) => { if (e.target === modal || e.target.classList.contains('modal-close-btn')) modal.style.display = 'none'; });
+            });
+
+            async function submitOrder() {
+                if (cart.length === 0) {
+                    showNotification('O seu carrinho está vazio!');
+                    return;
+                }
+                let totalPrice = 0;
+                let orderSummary = '';
+                cart.forEach(item => {
+                    let itemTotal = item.price;
+                    let detailsText = '';
+                    if (item.addons && item.addons.length > 0) {
+                        item.addons.forEach(addon => { itemTotal += addon.price; detailsText += `  + ${addon.name}\n`; });
+                    }
+                     if (item.observations) { detailsText += `  Obs: ${item.observations}\n`; }
+                    orderSummary += `*${item.quantity}x ${item.name}*\n${detailsText}`;
+                    totalPrice += itemTotal * item.quantity;
+                });
+                
+                let message = '🍔 *NOVO PEDIDO - AI FOME BURGER* 🍔\n\n';
+                message += '*Cliente:* ' + userData.name + '\n*Telefone:* ' + userData.phone + '\n*Endereço:* ' + userData.address + '\n\n';
+                message += '--- *ITENS DO PEDIDO* ---\n' + orderSummary + '\n';
+                message += `*TOTAL: R ${totalPrice.toFixed(2).replace('.', ',')}*`;
+
+                const orderData = { user: userData, items: cart, total: totalPrice, status: 'Pedido Recebido', createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+
+                const whatsappWindow = window.open('', '_blank');
+                whatsappWindow.document.write('Aguarde, a registar o seu pedido...');
+
+                try {
+                    const docRef = await db.collection("orders").add(orderData);
+                    localStorage.setItem('aiFomeLastOrder', docRef.id);
+                    checkLastOrder();
+                    const phoneNumber = '558288506029';
+                    const encodedMessage = encodeURIComponent(message);
+                    const whatsappUrl = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
+                    whatsappWindow.location.href = whatsappUrl;
+                    
+                    setTimeout(resetOrderState, 500);
+                } catch (error) {
+                    console.error("Erro ao adicionar pedido: ", error);
+                    whatsappWindow.close();
+                    showNotification("Ocorreu um erro ao registar o seu pedido. Verifique a sua ligação à internet e a configuração do Firebase.");
+                }
+            }
+
+            confirmOrderBtn.addEventListener('click', submitOrder);
+            
+            function checkLastOrder() {
+                const lastOrderId = localStorage.getItem('aiFomeLastOrder');
+                if(lastOrderId) {
+                    trackOrderBtn.href = `tracker.html?orderId=${lastOrderId}`;
+                    trackOrderBtn.style.display = 'inline-block';
+                } else {
+                    trackOrderBtn.style.display = 'none';
+                }
+            }
+            
+            document.querySelectorAll('.item-image').forEach(image => {
+                image.addEventListener('mouseenter', () => {
+                    const menuItem = image.closest('.menu-item');
+                    if (menuItem) {
+                        menuItem.classList.add('is-zoomed');
+                    }
+                });
+                image.addEventListener('mouseleave', () => {
+                    const menuItem = image.closest('.menu-item');
+                    if (menuItem) {
+                        menuItem.classList.remove('is-zoomed');
+                    }
+                });
+            });
+            
+            checkUser();
+            checkLastOrder();
+        });
+    </script>
+</body>
+</html>
+

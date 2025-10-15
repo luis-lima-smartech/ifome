@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Pedidos - Ai Fome</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-color: #c5a560; --text-color: #f0f0f0; }
+        body { font-family: 'Poppins', sans-serif; background-color: #121212; color: var(--text-color); padding: 20px; }
+        h1 { text-align: center; color: var(--primary-color); margin-bottom: 30px; }
+        #orders-container { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); }
+        .order-card { background-color: #1e1e1e; border-radius: 8px; padding: 20px; border-left: 5px solid var(--primary-color); }
+        .order-card h2 { margin-bottom: 10px; font-size: 1.2em; }
+        .order-card p { margin-bottom: 5px; font-size: 0.9em; }
+        .order-card ul { list-style: none; padding-left: 15px; margin: 10px 0; }
+        .order-card li { font-size: 0.9em; margin-bottom: 5px; }
+        .order-card .addons { font-size: 0.8em; color: #ccc; padding-left: 10px; }
+        .status-select { width: 100%; padding: 10px; margin-top: 15px; background-color: #333; color: white; border: 1px solid var(--primary-color); border-radius: 5px; font-family: 'Poppins', sans-serif; font-size: 1em; }
+    </style>
+</head>
+<body>
+
+    <h1>Painel de Pedidos em Tempo Real</h1>
+    <div id="orders-container"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5RdgOAzSRxhjwPd0TvVWB3_rt5JVmq1M",
+            authDomain: "aifome-cardapio.firebaseapp.com",
+            projectId: "aifome-cardapio",
+            storageBucket: "aifome-cardapio.firebasestorage.app",
+            messagingSenderId: "247386725614",
+            appId: "1:247386725614:web:793ad0a4c48249eb08e7ff"
+        };
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch(e) {
+            console.error("Firebase já inicializado ou configuração inválida.");
+        }
+        const db = firebase.firestore();
+
+        const ordersContainer = document.getElementById('orders-container');
+        const statuses = ["Pedido Recebido", "Em Preparo", "Pronto para Entrega", "Saiu para Entrega", "Concluído"];
+
+        function renderOrders(orders) {
+            ordersContainer.innerHTML = '';
+            if (orders.length === 0) {
+                ordersContainer.innerHTML = '<p style="text-align: center;">Nenhum pedido ativo no momento.</p>';
+            }
+            orders.forEach(order => {
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.id = order.id;
+
+                let itemsHtml = '<ul>';
+                order.data.items.forEach(item => {
+                    itemsHtml += `<li><b>${item.quantity}x ${item.name}</b>`;
+                    if (item.addons && item.addons.length > 0) {
+                        item.addons.forEach(addon => {
+                            itemsHtml += `<div class="addons">+ ${addon.name}</div>`;
+                        });
+                    }
+                     if (item.observations) {
+                        itemsHtml += `<div class="addons"><i>Obs: ${item.observations}</i></div>`;
+                    }
+                    itemsHtml += `</li>`;
+                });
+                itemsHtml += '</ul>';
+
+                const selectOptions = statuses.map(s => `<option value="${s}" ${s === order.data.status ? 'selected' : ''}>${s}</option>`).join('');
+
+                card.innerHTML = `
+                    <h2>Pedido de: ${order.data.user.name}</h2>
+                    <p><strong>Endereço:</strong> ${order.data.user.address}</p>
+                    <p><strong>Telefone:</strong> ${order.data.user.phone}</p>
+                    <p><strong>Itens:</strong></p>
+                    ${itemsHtml}
+                    <p><strong>Total:</strong> R$ ${order.data.total.toFixed(2).replace('.', ',')}</p>
+                    <select class="status-select" data-id="${order.id}">
+                        ${selectOptions}
+                    </select>
+                `;
+                ordersContainer.appendChild(card);
+            });
+        }
+
+        db.collection("orders")
+            .where("status", "!=", "Concluído")
+            .onSnapshot((querySnapshot) => {
+                const orders = [];
+                querySnapshot.forEach((doc) => {
+                    orders.push({ id: doc.id, data: doc.data() });
+                });
+                
+                orders.sort((a, b) => {
+                    const timeA = a.data.createdAt?.toDate() || new Date(0);
+                    const timeB = b.data.createdAt?.toDate() || new Date(0);
+                    return timeB - timeA;
+                });
+
+                renderOrders(orders);
+            }, (error) => {
+                console.error("Erro ao carregar pedidos: ", error);
+                ordersContainer.innerHTML = '<p style="text-align: center;">Erro ao carregar os pedidos. Verifique a sua ligação e a configuração do Firebase.</p>';
+            });
+
+        ordersContainer.addEventListener('change', (e) => {
+            if (e.target.classList.contains('status-select')) {
+                const orderId = e.target.dataset.id;
+                const newStatus = e.target.value;
+                db.collection("orders").doc(orderId).update({ status: newStatus })
+                    .catch(err => console.error("Erro ao atualizar o estado: ", err));
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,22 @@
+{
+  "name": "Ai Fome Cardápio",
+  "short_name": "Ai Fome",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#1c1c1c",
+  "theme_color": "#c5a560",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
+
